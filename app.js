@@ -5,9 +5,13 @@ const flash = require('connect-flash');
 const methodOverride = require('method-override');
 
 const { body, check, validationResult } = require('express-validator');
-
-require('./utils/db');
-const Contact = require('./model/contact');
+const {
+  getContacts,
+  findContactByName,
+  addContact,
+  deleteContact,
+  editContactByName,
+} = require('./repository/contactRepository');
 
 const app = express();
 const port = 3000;
@@ -33,21 +37,7 @@ app.use(
 app.use(flash());
 
 app.get('/', (req, res) => {
-  const students = [
-    {
-      name: 'Kamaludin',
-      email: 'kamaludin@gmail.com',
-    },
-    {
-      name: 'Dono Hartono',
-      email: 'hartono@gmail.com',
-    },
-    {
-      name: 'Arifin Ilham',
-      email: 'arifin@gmail.com',
-    },
-  ];
-  res.render('index', { layout: 'layouts/main-layout', students, title: 'Home' });
+  res.render('index', { layout: 'layouts/main-layout', title: 'Home' });
 });
 
 app.get('/about', (req, res) => {
@@ -55,7 +45,7 @@ app.get('/about', (req, res) => {
 });
 
 app.get('/contact', async (req, res) => {
-  const contacts = await Contact.find();
+  const contacts = await getContacts();
   res.render('contact', {
     layout: 'layouts/main-layout',
     title: 'Contact',
@@ -72,7 +62,7 @@ app.post(
   '/contact',
   [
     body('name').custom(async (value) => {
-      const duplikat = await Contact.findOne({ name: value });
+      const duplikat = await findContactByName(value);
       if (duplikat) {
         throw new Error('Contact name already exists');
       }
@@ -81,7 +71,7 @@ app.post(
     check('email', 'Invalid e-mail').isEmail(),
     check('phone', 'Invalid phone number').isMobilePhone('id-ID'),
   ],
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.render('add-contact', {
@@ -90,23 +80,21 @@ app.post(
         errors: errors.array(),
       });
     } else {
-      Contact.insertMany(req.body, (error, result) => {
-        req.flash('msg', 'Contact has been added!');
-        res.redirect('/contact');
-      });
+      await addContact(req.body);
+      req.flash('msg', 'Contact has been added!');
+      res.redirect('/contact');
     }
   },
 );
 
 app.delete('/contact', (req, res) => {
-  Contact.deleteOne({ name: req.body.name }).then((result) => {
-    req.flash('msg', 'Contact has been deleted!');
-    res.redirect('/contact');
-  });
+  deleteContact(req.body.name);
+  req.flash('msg', 'Contact has been deleted!');
+  res.redirect('/contact');
 });
 
 app.get('/contact/edit/:name', async (req, res) => {
-  const contact = await Contact.findOne({ name: req.params.name });
+  const contact = await findContactByName(req.params.name);
   res.render('edit-contact', {
     layout: 'layouts/main-layout',
     title: 'Edit Contact Form',
@@ -118,7 +106,7 @@ app.put(
   '/contact',
   [
     body('name').custom(async (value, { req }) => {
-      const duplikat = await Contact.findOne({ name: value });
+      const duplikat = await findContactByName(value);
       if (value !== req.body.oldName && duplikat) {
         throw new Error('Contact name already exists');
       }
@@ -127,7 +115,7 @@ app.put(
     check('email', 'Invalid e-mail').isEmail(),
     check('phone', 'Invalid phone number').isMobilePhone('id-ID'),
   ],
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.render('edit-contact', {
@@ -137,29 +125,19 @@ app.put(
         contact: req.body,
       });
     } else {
-      Contact.updateOne(
-        { _id: req.body._id },
-        {
-          $set: {
-            name: req.body.name,
-            email: req.body.email,
-            phone: req.body.phone,
-          },
-        },
-      ).then((result) => {
-        req.flash('msg', 'Contact has been edited!');
-        res.redirect('/contact');
-      });
+      await editContactByName(req.body);
+      req.flash('msg', 'Contact has been edited!');
+      res.redirect('/contact');
     }
   },
 );
 
 app.get('/contact/:name', async (req, res) => {
-  const contact = await Contact.findOne({ name: req.params.name });
+  const contact = await findContactByName(req.params.name);
 
   res.render('detail', { layout: 'layouts/main-layout', title: 'Contact Detail Page', contact });
 });
 
 app.listen(port, () => {
-  console.log(`Mongo Contact App | listening at http://localhost:${port}`);
+  console.log(`MySQL Contact App | listening at http://localhost:${port}`);
 });
