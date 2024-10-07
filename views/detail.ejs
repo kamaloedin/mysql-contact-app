@@ -16,9 +16,9 @@
           <h5 class="card-title"><%= contact.name %></h5>
           <h6 class="card-subtitle mb-2 text-body-secondary"><%= contact.phone %></h6>
           <p class="card-text"><%= contact.email %></p>
-          <a href="/contact/edit/<%= contact.name %>" class="btn btn-info badge"> Edit </a>
+          <a href="/contact/edit/<%= contact.id %>" class="btn btn-info badge"> Edit </a>
           <form action="/contact?_method=DELETE" method="post" class="d-inline">
-            <input type="hidden" name="name" value="<%= contact.name %>" />
+            <input type="hidden" name="id" value="<%= contact.id %>" />
             <button class="btn btn-danger badge" onclick="return confirm('Are you sure?')">
               Delete
             </button>

@@ -10,7 +10,8 @@ const {
   findContactByName,
   addContact,
   deleteContact,
-  editContactByName,
+  findContactById,
+  editContactById,
 } = require('./repository/contactRepository');
 
 const app = express();
@@ -88,13 +89,13 @@ app.post(
 );
 
 app.delete('/contact', (req, res) => {
-  deleteContact(req.body.name);
+  deleteContact(req.body.id);
   req.flash('msg', 'Contact has been deleted!');
   res.redirect('/contact');
 });
 
-app.get('/contact/edit/:name', async (req, res) => {
-  const contact = await findContactByName(req.params.name);
+app.get('/contact/edit/:id', async (req, res) => {
+  const contact = await findContactById(req.params.id);
   res.render('edit-contact', {
     layout: 'layouts/main-layout',
     title: 'Edit Contact Form',
@@ -125,15 +126,15 @@ app.put(
         contact: req.body,
       });
     } else {
-      await editContactByName(req.body);
+      await editContactById(req.body);
       req.flash('msg', 'Contact has been edited!');
       res.redirect('/contact');
     }
   },
 );
 
-app.get('/contact/:name', async (req, res) => {
-  const contact = await findContactByName(req.params.name);
+app.get('/contact/:id', async (req, res) => {
+  const contact = await findContactById(req.params.id);
 
   res.render('detail', { layout: 'layouts/main-layout', title: 'Contact Detail Page', contact });
 });
